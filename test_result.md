@@ -102,7 +102,7 @@
 # Testing Data - Main Agent and testing sub agent both should log testing data below this section
 #====================================================================================================
 
-user_problem_statement: "Test the backend API endpoints for a task manager application."
+user_problem_statement: "Test the frontend functionality for a task manager application with drag-and-drop Kanban board functionality."
 
 backend:
   - task: "GET /api/tasks - Get all tasks"
@@ -214,17 +214,65 @@ backend:
         comment: "Fixed the routing conflict by moving the GET /api/tasks/stats endpoint before the GET /api/tasks/{task_id} endpoint in server.py. The endpoint now works correctly and returns the expected statistics including total tasks, status counts, priority breakdown, and tag breakdown."
 
 frontend:
-  - task: "Frontend Implementation"
+  - task: "Drag-and-Drop Kanban Functionality"
+    implemented: true
+    working: "NA"
+    file: "/app/frontend/src/App.js"
+    stuck_count: 0
+    priority: "high"
+    needs_retesting: true
+    status_history:
+      - working: "NA"
+        agent: "testing"
+        comment: "Initial setup for testing drag-and-drop functionality between columns"
+
+  - task: "Task Form Interactions"
+    implemented: true
+    working: "NA"
+    file: "/app/frontend/src/App.js"
+    stuck_count: 0
+    priority: "high"
+    needs_retesting: true
+    status_history:
+      - working: "NA"
+        agent: "testing"
+        comment: "Initial setup for testing task creation and editing form"
+
+  - task: "Dashboard Charts and Stats"
     implemented: true
     working: "NA"
     file: "/app/frontend/src/App.js"
     stuck_count: 0
     priority: "medium"
-    needs_retesting: false
+    needs_retesting: true
     status_history:
       - working: "NA"
         agent: "testing"
-        comment: "Frontend testing not in scope for this test run"
+        comment: "Initial setup for testing dashboard charts and statistics"
+
+  - task: "Navigation and Responsiveness"
+    implemented: true
+    working: "NA"
+    file: "/app/frontend/src/App.js"
+    stuck_count: 0
+    priority: "medium"
+    needs_retesting: true
+    status_history:
+      - working: "NA"
+        agent: "testing"
+        comment: "Initial setup for testing navigation between views and responsive design"
+
+  - task: "Task Card Interactions"
+    implemented: true
+    working: "NA"
+    file: "/app/frontend/src/App.js"
+    stuck_count: 0
+    priority: "high"
+    needs_retesting: true
+    status_history:
+      - working: "NA"
+        agent: "testing"
+        comment: "Initial setup for testing task card interactions (edit, delete, display)"
 
 metadata:
   created_by: "testing_agent"
