@@ -44,7 +44,7 @@ const Navigation = ({ activeView, onViewChange }) => {
               onClick={() => onViewChange('kanban')}
               className={`nav-item ${activeView === 'kanban' ? 'nav-item-active' : 'nav-item-inactive'}`}
             >
-              <FiKanban className="w-4 h-4 mr-2" />
+              <FiColumns className="w-4 h-4 mr-2" />
               Kanban
             </button>
           </div>
