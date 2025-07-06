@@ -298,3 +298,5 @@ agent_communication:
     message: "Completed testing of all backend API endpoints. All endpoints are working correctly except for the GET /api/tasks/stats endpoint, which has a routing conflict. The stats endpoint is defined after the GET /api/tasks/{task_id} endpoint in server.py, causing the 'stats' path to be interpreted as a task ID. To fix this issue, the stats endpoint should be moved before the task ID endpoint in the code."
   - agent: "testing"
     message: "Fixed the routing conflict in the GET /api/tasks/stats endpoint by moving it before the GET /api/tasks/{task_id} endpoint in server.py. All backend API endpoints are now working correctly. The stats endpoint returns the expected statistics including total tasks, status counts, priority breakdown, and tag breakdown."
+  - agent: "testing"
+    message: "Starting frontend testing for the task manager application with Kanban board functionality. Will test drag-and-drop functionality, task form interactions, dashboard charts, navigation, and task card interactions."
