@@ -98,6 +98,36 @@ async def get_tasks():
     tasks = await db.tasks.find().to_list(1000)
     return [Task(**task) for task in tasks]
 
+# Stats endpoint moved before the task_id endpoint to avoid routing conflict
+@api_router.get("/tasks/stats", response_model=TaskStats)
+async def get_task_stats():
+    tasks = await db.tasks.find().to_list(1000)
+    
+    total = len(tasks)
+    todo = len([t for t in tasks if t["status"] == "todo"])
+    in_progress = len([t for t in tasks if t["status"] == "in_progress"])
+    done = len([t for t in tasks if t["status"] == "done"])
+    
+    # Priority breakdown
+    priority_breakdown = {"low": 0, "medium": 0, "high": 0}
+    for task in tasks:
+        priority_breakdown[task["priority"]] += 1
+    
+    # Tag breakdown
+    tag_breakdown = {}
+    for task in tasks:
+        for tag in task.get("tags", []):
+            tag_breakdown[tag] = tag_breakdown.get(tag, 0) + 1
+    
+    return TaskStats(
+        total=total,
+        todo=todo,
+        in_progress=in_progress,
+        done=done,
+        priority_breakdown=priority_breakdown,
+        tag_breakdown=tag_breakdown
+    )
+
 @api_router.get("/tasks/{task_id}", response_model=Task)
 async def get_task(task_id: str):
     task = await db.tasks.find_one({"id": task_id})
@@ -137,35 +167,6 @@ async def delete_task(task_id: str):
     if result.deleted_count == 0:
         raise HTTPException(status_code=404, detail="Task not found")
     return {"message": "Task deleted successfully"}
-
-@api_router.get("/tasks/stats", response_model=TaskStats)
-async def get_task_stats():
-    tasks = await db.tasks.find().to_list(1000)
-    
-    total = len(tasks)
-    todo = len([t for t in tasks if t["status"] == "todo"])
-    in_progress = len([t for t in tasks if t["status"] == "in_progress"])
-    done = len([t for t in tasks if t["status"] == "done"])
-    
-    # Priority breakdown
-    priority_breakdown = {"low": 0, "medium": 0, "high": 0}
-    for task in tasks:
-        priority_breakdown[task["priority"]] += 1
-    
-    # Tag breakdown
-    tag_breakdown = {}
-    for task in tasks:
-        for tag in task.get("tags", []):
-            tag_breakdown[tag] = tag_breakdown.get(tag, 0) + 1
-    
-    return TaskStats(
-        total=total,
-        todo=todo,
-        in_progress=in_progress,
-        done=done,
-        priority_breakdown=priority_breakdown,
-        tag_breakdown=tag_breakdown
-    )
 
 # Include the router in the main app
 app.include_router(api_router)
