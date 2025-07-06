@@ -37,7 +37,7 @@ const Navigation = ({ activeView, onViewChange }) => {
               onClick={() => onViewChange('dashboard')}
               className={`nav-item ${activeView === 'dashboard' ? 'nav-item-active' : 'nav-item-inactive'}`}
             >
-              <FiBarChart3 className="w-4 h-4 mr-2" />
+              <FiBarChart2 className="w-4 h-4 mr-2" />
               Dashboard
             </button>
             <button
