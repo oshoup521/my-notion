@@ -277,13 +277,18 @@ frontend:
 metadata:
   created_by: "testing_agent"
   version: "1.0"
-  test_sequence: 2
-  run_ui: false
+  test_sequence: 3
+  run_ui: true
 
 test_plan:
-  current_focus: []
+  current_focus:
+    - "Drag-and-Drop Kanban Functionality"
+    - "Task Form Interactions"
+    - "Dashboard Charts and Stats"
+    - "Navigation and Responsiveness"
+    - "Task Card Interactions"
   stuck_tasks: []
-  test_all: false
+  test_all: true
   test_priority: "high_first"
 
 agent_communication:
