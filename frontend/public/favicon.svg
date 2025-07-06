@@ -1,0 +1,11 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100" width="32" height="32">
+  <!-- Background Circle -->
+  <circle cx="50" cy="50" r="48" fill="#6d28d9" />
+  
+  <!-- Stylized 'T' for TaskFlow -->
+  <path d="M30 25 L70 25 L70 35 L55 35 L55 75 L45 75 L45 35 L30 35 Z" fill="white" />
+  
+  <!-- Flowing line representing task flow -->
+  <path d="M25 50 Q35 40, 50 50 T75 50" stroke="white" stroke-width="4" fill="none" />
+  <path d="M25 60 Q40 70, 60 60 T75 60" stroke="white" stroke-width="4" fill="none" />
+</svg>
