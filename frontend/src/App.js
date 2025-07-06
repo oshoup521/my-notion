@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { BrowserRouter as Router, Routes, Route, useNavigate } from 'react-router-dom';
 import { DragDropContext, Droppable, Draggable } from '@hello-pangea/dnd';
 import { PieChart, Pie, Cell, BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer } from 'recharts';
-import { FiPlus, FiEdit2, FiTrash2, FiCalendar, FiTag, FiBarChart3, FiKanban, FiHome, FiCheckCircle, FiAlertCircle, FiClock } from 'react-icons/fi';
+import { FiPlus, FiEdit2, FiTrash2, FiCalendar, FiTag, FiBarChart2, FiColumns, FiHome, FiCheckCircle, FiAlertCircle, FiClock } from 'react-icons/fi';
 import axios from 'axios';
 import './App.css';
 
