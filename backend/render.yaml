@@ -1,0 +1,16 @@
+services:
+  - type: web
+    name: my-notion-backend
+    env: python
+    plan: free
+    buildCommand: pip install -r requirements.txt
+    startCommand: uvicorn server:app --host 0.0.0.0 --port $PORT
+    envVars:
+      - key: PYTHON_VERSION
+        value: 3.11.0
+      - key: DATABASE_URL
+        value: sqlite:///./app.db
+    disk:
+      name: my-notion-data
+      mountPath: /opt/render/project/src
+      sizeGB: 1

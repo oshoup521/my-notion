@@ -297,3 +297,18 @@ app.add_middleware(
     allow_methods=["*"],
     allow_headers=["*"],
 )
+
+# Health check endpoint
+@app.get("/")
+async def health_check():
+    return {"status": "healthy", "message": "My Notion Backend API is running"}
+
+@app.get("/health")
+async def health():
+    return {"status": "ok"}
+
+# Run the application
+if __name__ == "__main__":
+    import uvicorn
+    port = int(os.getenv("PORT", 8000))
+    uvicorn.run(app, host="0.0.0.0", port=port)
