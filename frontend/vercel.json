@@ -2,6 +2,9 @@
   "buildCommand": "yarn build",
   "outputDirectory": "build",
   "framework": "create-react-app",
+  "env": {
+    "REACT_APP_BACKEND_URL": "https://my-notion-plc9.onrender.com"
+  },
   "rewrites": [
     {
       "source": "/(.*)",
@@ -18,5 +21,6 @@
         }
       ]
     }
-  ]
+  ],
+  "domains": ["taskflow.oshoupadhyay.in"]
 } 

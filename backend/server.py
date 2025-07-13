@@ -292,7 +292,13 @@ app.include_router(api_router)
 # Add CORS middleware
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"],  # In production, replace with specific origins
+    allow_origins=[
+        "http://localhost:3000",  # Local development
+        "https://*.vercel.app",   # Vercel deployments
+        "https://vercel.app",     # Vercel domain
+        "https://taskflow.oshoupadhyay.in",  # Custom domain
+        "http://taskflow.oshoupadhyay.in",   # Custom domain (HTTP fallback)
+    ],
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
