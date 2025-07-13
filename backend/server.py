@@ -1,7 +1,7 @@
-from fastapi import FastAPI, APIRouter, HTTPException
+from fastapi import FastAPI, APIRouter, HTTPException, Depends
 from dotenv import load_dotenv
 from starlette.middleware.cors import CORSMiddleware
-from motor.motor_asyncio import AsyncIOMotorClient
+from sqlalchemy.orm import Session
 import os
 import logging
 from pathlib import Path
@@ -11,13 +11,15 @@ import uuid
 from datetime import datetime
 from enum import Enum
 
+# Import database and models
+from database import get_db, engine
+from models import Base, Task, ChecklistItem
+
 ROOT_DIR = Path(__file__).parent
 load_dotenv(ROOT_DIR / '.env')
 
-# MongoDB connection
-mongo_url = os.environ['MONGO_URL']
-client = AsyncIOMotorClient(mongo_url)
-db = client[os.environ['DB_NAME']]
+# Create database tables
+Base.metadata.create_all(bind=engine)
 
 # Create the main app without a prefix
 app = FastAPI()
@@ -88,35 +90,85 @@ async def root():
     return {"message": "Task Manager API"}
 
 @api_router.post("/tasks", response_model=Task)
-async def create_task(task_data: TaskCreate):
-    task = Task(**task_data.dict())
-    await db.tasks.insert_one(task.dict())
-    return task
+async def create_task(task_data: TaskCreate, db: Session = Depends(get_db)):
+    # Create task
+    db_task = Task(
+        title=task_data.title,
+        description=task_data.description,
+        priority=task_data.priority,
+        tags=task_data.tags,
+        due_date=task_data.due_date
+    )
+    
+    # Add checklist items
+    for item in task_data.checklist:
+        checklist_item = ChecklistItem(
+            text=item.text,
+            completed=item.completed
+        )
+        db_task.checklist_items.append(checklist_item)
+    
+    db.add(db_task)
+    db.commit()
+    db.refresh(db_task)
+    
+    # Convert to response model
+    response_task = Task(
+        id=db_task.id,
+        title=db_task.title,
+        description=db_task.description,
+        status=db_task.status,
+        priority=db_task.priority,
+        tags=db_task.tags or [],
+        due_date=db_task.due_date,
+        checklist=[ChecklistItem(id=item.id, text=item.text, completed=item.completed) for item in db_task.checklist_items],
+        created_at=db_task.created_at,
+        updated_at=db_task.updated_at
+    )
+    
+    return response_task
 
 @api_router.get("/tasks", response_model=List[Task])
-async def get_tasks():
-    tasks = await db.tasks.find().to_list(1000)
-    return [Task(**task) for task in tasks]
+async def get_tasks(db: Session = Depends(get_db)):
+    db_tasks = db.query(Task).all()
+    tasks = []
+    
+    for db_task in db_tasks:
+        task = Task(
+            id=db_task.id,
+            title=db_task.title,
+            description=db_task.description,
+            status=db_task.status,
+            priority=db_task.priority,
+            tags=db_task.tags or [],
+            due_date=db_task.due_date,
+            checklist=[ChecklistItem(id=item.id, text=item.text, completed=item.completed) for item in db_task.checklist_items],
+            created_at=db_task.created_at,
+            updated_at=db_task.updated_at
+        )
+        tasks.append(task)
+    
+    return tasks
 
 # Stats endpoint moved before the task_id endpoint to avoid routing conflict
 @api_router.get("/tasks/stats", response_model=TaskStats)
-async def get_task_stats():
-    tasks = await db.tasks.find().to_list(1000)
+async def get_task_stats(db: Session = Depends(get_db)):
+    tasks = db.query(Task).all()
     
     total = len(tasks)
-    todo = len([t for t in tasks if t["status"] == "todo"])
-    in_progress = len([t for t in tasks if t["status"] == "in_progress"])
-    done = len([t for t in tasks if t["status"] == "done"])
+    todo = len([t for t in tasks if t.status == "todo"])
+    in_progress = len([t for t in tasks if t.status == "in_progress"])
+    done = len([t for t in tasks if t.status == "done"])
     
     # Priority breakdown
     priority_breakdown = {"low": 0, "medium": 0, "high": 0}
     for task in tasks:
-        priority_breakdown[task["priority"]] += 1
+        priority_breakdown[task.priority] += 1
     
     # Tag breakdown
     tag_breakdown = {}
     for task in tasks:
-        for tag in task.get("tags", []):
+        for tag in task.tags or []:
             tag_breakdown[tag] = tag_breakdown.get(tag, 0) + 1
     
     return TaskStats(
@@ -129,43 +181,96 @@ async def get_task_stats():
     )
 
 @api_router.get("/tasks/{task_id}", response_model=Task)
-async def get_task(task_id: str):
-    task = await db.tasks.find_one({"id": task_id})
-    if not task:
+async def get_task(task_id: str, db: Session = Depends(get_db)):
+    db_task = db.query(Task).filter(Task.id == task_id).first()
+    if not db_task:
         raise HTTPException(status_code=404, detail="Task not found")
-    return Task(**task)
+    
+    task = Task(
+        id=db_task.id,
+        title=db_task.title,
+        description=db_task.description,
+        status=db_task.status,
+        priority=db_task.priority,
+        tags=db_task.tags or [],
+        due_date=db_task.due_date,
+        checklist=[ChecklistItem(id=item.id, text=item.text, completed=item.completed) for item in db_task.checklist_items],
+        created_at=db_task.created_at,
+        updated_at=db_task.updated_at
+    )
+    return task
 
 @api_router.put("/tasks/{task_id}", response_model=Task)
-async def update_task(task_id: str, task_update: TaskUpdate):
-    task = await db.tasks.find_one({"id": task_id})
-    if not task:
+async def update_task(task_id: str, task_update: TaskUpdate, db: Session = Depends(get_db)):
+    db_task = db.query(Task).filter(Task.id == task_id).first()
+    if not db_task:
         raise HTTPException(status_code=404, detail="Task not found")
     
-    update_data = task_update.dict(exclude_unset=True)
-    update_data["updated_at"] = datetime.utcnow()
+    # Update fields
+    if task_update.title is not None:
+        db_task.title = task_update.title
+    if task_update.description is not None:
+        db_task.description = task_update.description
+    if task_update.status is not None:
+        db_task.status = task_update.status
+    if task_update.priority is not None:
+        db_task.priority = task_update.priority
+    if task_update.tags is not None:
+        db_task.tags = task_update.tags
+    if task_update.due_date is not None:
+        db_task.due_date = task_update.due_date
     
-    await db.tasks.update_one({"id": task_id}, {"$set": update_data})
-    updated_task = await db.tasks.find_one({"id": task_id})
-    return Task(**updated_task)
+    db_task.updated_at = datetime.utcnow()
+    db.commit()
+    db.refresh(db_task)
+    
+    task = Task(
+        id=db_task.id,
+        title=db_task.title,
+        description=db_task.description,
+        status=db_task.status,
+        priority=db_task.priority,
+        tags=db_task.tags or [],
+        due_date=db_task.due_date,
+        checklist=[ChecklistItem(id=item.id, text=item.text, completed=item.completed) for item in db_task.checklist_items],
+        created_at=db_task.created_at,
+        updated_at=db_task.updated_at
+    )
+    return task
 
 @api_router.patch("/tasks/{task_id}/status")
-async def update_task_status(task_id: str, status_update: TaskStatusUpdate):
-    task = await db.tasks.find_one({"id": task_id})
-    if not task:
+async def update_task_status(task_id: str, status_update: TaskStatusUpdate, db: Session = Depends(get_db)):
+    db_task = db.query(Task).filter(Task.id == task_id).first()
+    if not db_task:
         raise HTTPException(status_code=404, detail="Task not found")
     
-    await db.tasks.update_one(
-        {"id": task_id}, 
-        {"$set": {"status": status_update.status, "updated_at": datetime.utcnow()}}
+    db_task.status = status_update.status
+    db_task.updated_at = datetime.utcnow()
+    db.commit()
+    db.refresh(db_task)
+    
+    task = Task(
+        id=db_task.id,
+        title=db_task.title,
+        description=db_task.description,
+        status=db_task.status,
+        priority=db_task.priority,
+        tags=db_task.tags or [],
+        due_date=db_task.due_date,
+        checklist=[ChecklistItem(id=item.id, text=item.text, completed=item.completed) for item in db_task.checklist_items],
+        created_at=db_task.created_at,
+        updated_at=db_task.updated_at
     )
-    updated_task = await db.tasks.find_one({"id": task_id})
-    return Task(**updated_task)
+    return task
 
 @api_router.delete("/tasks/{task_id}")
-async def delete_task(task_id: str):
-    result = await db.tasks.delete_one({"id": task_id})
-    if result.deleted_count == 0:
+async def delete_task(task_id: str, db: Session = Depends(get_db)):
+    db_task = db.query(Task).filter(Task.id == task_id).first()
+    if not db_task:
         raise HTTPException(status_code=404, detail="Task not found")
+    
+    db.delete(db_task)
+    db.commit()
     return {"message": "Task deleted successfully"}
 
 # Include the router in the main app
@@ -185,10 +290,6 @@ logging.basicConfig(
     format='%(asctime)s - %(name)s - %(levelname)s - %(message)s'
 )
 logger = logging.getLogger(__name__)
-
-@app.on_event("shutdown")
-async def shutdown_db_client():
-    client.close()
 
 # Add this at the end of the file
 if __name__ == "__main__":
